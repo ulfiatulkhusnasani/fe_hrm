@@ -33,9 +33,9 @@ const AppMenu = () => {
                     icon: 'pi pi-fw pi-list',
                     items: [
                         { label: 'Hadir', icon: 'pi pi-fw pi-info-circle', to: '/pages/Hadir' },
-                        { label: 'Libur', icon: 'pi pi-fw pi-info-circle', to: '/pages/Libur' },
-                        { label: 'Alfa', icon: 'pi pi-fw pi-info-circle', to: '/uikit/absensi/alfa' },
-                        { label: 'Izin/cuti', icon: 'pi pi-fw pi-info-circle', to: '/uikit/absensi/izin-cuti' }
+                        { label: 'Cuti', icon: 'pi pi-fw pi-info-circle', to: '/pages/Cuti' },
+                        { label: 'Lembur', icon: 'pi pi-fw pi-info-circle', to: '/pages/Lembur' },
+                        { label: 'Dinas luar kota', icon: 'pi pi-fw pi-info-circle', to: '/pages/Dinas' }
                     ]
                 },
                 { label: 'Lembur', icon: 'pi pi-fw pi-tablet', to: '/uikit/panel' },

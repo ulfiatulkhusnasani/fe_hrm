@@ -1,4 +1,4 @@
-"use client";
+"use client"; 
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { DataTable } from "primereact/datatable";
@@ -6,7 +6,7 @@ import { Column } from "primereact/column";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { InputText } from "primereact/inputtext";
-import Swal from "sweetalert2"; // Import SweetAlert2
+import Swal from "sweetalert2"; 
 
 interface Employee {
   id: string;
@@ -16,10 +16,9 @@ interface Employee {
   no_handphone: string;
   alamat: string;
   password: string;
-  status_aktif: boolean;
 }
 
-const API_URL = "http://localhost:8000/api/karyawan"; // Ganti URL API jika perlu
+const API_URL = "http://localhost:8000/api/karyawan"; 
 
 const DataKaryawan = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -32,23 +31,27 @@ const DataKaryawan = () => {
     no_handphone: "",
     alamat: "",
     password: "",
-    status_aktif: false,
   });
-  const [showPassword, setShowPassword] = useState(false); // State untuk mengatur visibilitas password
+  const [showPassword, setShowPassword] = useState(false); 
 
   useEffect(() => {
-    fetchEmployees(); // Ambil data karyawan saat komponen dimuat
+    fetchEmployees(); 
   }, []);
 
-  // Mengambil data karyawan dari API
   const fetchEmployees = async () => {
+    const token = localStorage.getItem('authToken'); 
     try {
-      const response = await axios.get(API_URL);
+      const response = await axios.get(API_URL, {
+        headers: {
+          Authorization: `Bearer ${token}`, 
+        },
+      });
       setEmployees(response.data);
     } catch (error) {
       const errorMessage = (error as Error).message;
       console.error("Error fetching employees:", errorMessage);
       if ((error as any).response) {
+        console.error("Response data:", (error as any).response.data);
         alert("Error fetching employees: " + ((error as any).response.data.message || errorMessage));
       } else {
         alert("Error fetching employees: " + errorMessage);
@@ -56,8 +59,8 @@ const DataKaryawan = () => {
     }
   };
 
-  // Menyimpan data karyawan
   const saveEmployee = async () => {
+    const token = localStorage.getItem('authToken');
     try {
       const employeeData: any = {
         nik: newEmployee.nik,
@@ -66,10 +69,8 @@ const DataKaryawan = () => {
         no_handphone: newEmployee.no_handphone,
         alamat: newEmployee.alamat,
         password: newEmployee.password,
-        status_aktif: newEmployee.status_aktif,
       };
 
-      // Validasi data sebelum mengirim
       if (!employeeData.nik || !employeeData.nama_karyawan || !employeeData.email || !employeeData.no_handphone || !employeeData.alamat || !employeeData.password) {
         Swal.fire({
           title: "Kesalahan!",
@@ -80,16 +81,22 @@ const DataKaryawan = () => {
       }
 
       if (newEmployee.id === "0") {
-        // Tambah karyawan baru
-        await axios.post(`${API_URL}/created`, employeeData);
+        await axios.post(`${API_URL}/created`, employeeData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         Swal.fire({
           title: "Berhasil!",
           text: "Data karyawan berhasil ditambahkan.",
           icon: "success",
         });
       } else {
-        // Update karyawan
-        await axios.put(`${API_URL}/${newEmployee.id}`, employeeData);
+        await axios.put(`${API_URL}/${newEmployee.id}`, employeeData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         Swal.fire({
           title: "Berhasil!",
           text: "Data karyawan berhasil diperbarui.",
@@ -98,7 +105,7 @@ const DataKaryawan = () => {
       }
 
       setDisplayDialog(false);
-      fetchEmployees(); // Refresh data
+      fetchEmployees(); 
     } catch (error) {
       const errorMessage = (error as Error).message;
       console.error("Error saving employee:", errorMessage);
@@ -111,7 +118,6 @@ const DataKaryawan = () => {
     }
   };
 
-  // Menghapus karyawan
   const deleteEmployee = async (id: string) => {
     Swal.fire({
       title: "Apakah Anda yakin?",
@@ -125,8 +131,12 @@ const DataKaryawan = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await axios.delete(`${API_URL}/${id}`);
-          fetchEmployees(); // Refresh data setelah dihapus
+          await axios.delete(`${API_URL}/${id}`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+            },
+          });
+          fetchEmployees(); 
           Swal.fire({
             title: "Dihapus!",
             text: "Data karyawan telah dihapus.",
@@ -145,7 +155,6 @@ const DataKaryawan = () => {
     });
   };
 
-  // Membuka dialog untuk menambah karyawan baru
   const openNew = () => {
     setNewEmployee({
       id: "0",
@@ -155,17 +164,14 @@ const DataKaryawan = () => {
       no_handphone: "",
       alamat: "",
       password: "",
-      status_aktif: false,
     });
     setDisplayDialog(true);
   };
 
-  // Menyembunyikan dialog
   const hideDialog = () => {
     setDisplayDialog(false);
   };
 
-  // Template untuk aksi dalam tabel
   const actionBodyTemplate = (rowData: Employee) => {
     return (
       <>
@@ -175,13 +181,11 @@ const DataKaryawan = () => {
     );
   };
 
-  // Mengedit data karyawan
   const editEmployee = (employee: Employee) => {
     setNewEmployee(employee);
     setDisplayDialog(true);
   };
 
-  // Header untuk tabel
   const header = (
     <div className="table-header">
       <Button label="Tambah" icon="pi pi-plus" className="p-button-primary mr-2" onClick={openNew} />
@@ -192,13 +196,14 @@ const DataKaryawan = () => {
     <div className="card">
       <h5>Data Karyawan</h5>
       <DataTable value={employees} responsiveLayout="scroll" header={header}>
+        <Column body={(rowData, { rowIndex }) => rowIndex + 1} header="No" style={{ width: '50px' }} /> {/* Menambahkan kolom nomor */}
         <Column field="nama_karyawan" header="Nama Karyawan"></Column>
         <Column field="nik" header="NIK"></Column>
         <Column field="email" header="Email"></Column>
         <Column field="no_handphone" header="No Handphone"></Column>
         <Column field="alamat" header="Alamat"></Column>
         <Column field="password" header="Password"></Column>
-        <Column header="Action" body={actionBodyTemplate}></Column>
+        <Column body={actionBodyTemplate} header="Aksi"></Column>
       </DataTable>
 
       <Dialog
@@ -269,28 +274,18 @@ const DataKaryawan = () => {
           <div style={{ display: "flex", alignItems: "center" }}>
             <InputText
               id="password"
-              type={showPassword ? "text" : "password"} // Tipe input dinamis
+              type={showPassword ? "text" : "password"}
               value={newEmployee.password}
               onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })}
               required
             />
             <Button
               icon={showPassword ? "pi pi-eye-slash" : "pi pi-eye"}
-              onClick={() => setShowPassword(!showPassword)} // Toggle visibilitas password
+              onClick={() => setShowPassword(!showPassword)}
               className="p-button-text"
               style={{ marginLeft: "5px" }}
             />
           </div>
-        </div>
-
-        <div className="p-field-checkbox">
-          <label htmlFor="status_aktif">Status Aktif</label>
-          <input
-            type="checkbox"
-            id="status_aktif"
-            checked={newEmployee.status_aktif}
-            onChange={(e) => setNewEmployee({ ...newEmployee, status_aktif: e.target.checked })}
-          />
         </div>
       </Dialog>
     </div>

@@ -36,7 +36,7 @@ const Hadir = () => {
         timeIn: Date;
         timeOut: Date;
         status: string;
-    }>( {
+    }>({
         idKaryawan: '',
         nama: '',
         tanggal: null,
@@ -53,11 +53,24 @@ const Hadir = () => {
     }, []);
 
     const fetchEmployees = async () => {
+        const token = localStorage.getItem('authToken');
+        console.log('Fetching employees with token:', token);
         try {
-            const response = await axios.get('http://localhost:8000/api/karyawan');
+            const response = await axios.get('http://localhost:8000/api/karyawan', {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                }
+            });
             setEmployees(response.data);
         } catch (error) {
             console.error('Error fetching employees:', error);
+            if (axios.isAxiosError(error) && error.response) {
+                console.error('Error response data:', error.response.data);
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: error.response.data.message || 'Gagal mengambil data karyawan.', life: 3000 });
+            } else {
+                console.error('Error:', error);
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Gagal mengambil data karyawan.', life: 3000 });
+            }
         }
     };
 
@@ -113,7 +126,12 @@ const Hadir = () => {
         console.log('Data absensi yang dikirim ke server:', newAttendance);
 
         try {
-            const response = await axios.post('http://localhost:8000/api/absensi', newAttendance);
+            const token = localStorage.getItem('authToken');
+            const response = await axios.post('http://localhost:8000/api/absensi', newAttendance, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
 
             if (response.status === 200) {
                 setAttendance((prevAttendance) => [...prevAttendance, newAttendance]);
@@ -208,8 +226,9 @@ const Hadir = () => {
                         </div>
                     </CSSTransition>
 
-                    <DataTable value={attendance} className="mt-3">
+                    <DataTable value={attendance} responsiveLayout="scroll">
                         <Column field="no" header="No" />
+                        <Column field="idKaryawan" header="ID Karyawan" />
                         <Column field="nama" header="Nama" />
                         <Column field="tanggal" header="Tanggal" />
                         <Column field="timeIn" header="Jam Masuk" />
