@@ -1,6 +1,5 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
-'use client';
 import { useRouter } from 'next/navigation';
 import React, { useContext, useState } from 'react';
 import { Checkbox } from 'primereact/checkbox';
@@ -14,12 +13,8 @@ import Swal from 'sweetalert2'; // Import SweetAlert2
 
 const Register = () => {
     const [namaKaryawan, setNamaKaryawan] = useState('');
-    const [nik, setNik] = useState('');
     const [email, setEmail] = useState('');
-    const [noHandphone, setNoHandphone] = useState('');
-    const [alamat, setAlamat] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
     const [checked, setChecked] = useState(false);
     const { layoutConfig } = useContext(LayoutContext);
     const router = useRouter();
@@ -30,7 +25,7 @@ const Register = () => {
     );
 
     const handleRegister = async () => {
-        // Validate email with regex
+        // Validasi email dengan regex
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             Swal.fire({
@@ -41,7 +36,7 @@ const Register = () => {
             return;
         }
 
-        // Validate that password is not empty
+        // Validasi password tidak boleh kosong
         if (!password.trim()) {
             Swal.fire({
                 icon: "error",
@@ -51,18 +46,7 @@ const Register = () => {
             return;
         }
 
-        // Validate that password and confirm password match
-        if (password !== confirmPassword) {
-            Swal.fire({
-                icon: "error",
-                title: "Oops...",
-                text: "Kata sandi tidak cocok!",
-                footer: '<a href="#">Mengapa saya mengalami masalah ini?</a>'
-            });
-            return;
-        }
-
-        // Validate that checkbox "Setuju" is checked
+        // Validasi checkbox "Setuju" harus dicentang
         if (!checked) {
             Swal.fire({
                 icon: "error",
@@ -80,16 +64,16 @@ const Register = () => {
                 },
                 body: JSON.stringify({
                     nama_karyawan: namaKaryawan,
-                    nik,
                     email,
-                    no_handphone: noHandphone,
-                    alamat,
-                    kata_sandi: password,
-                    konfirmasi_kata_sandi: confirmPassword,
+                    password,  // changed kata_sandi to password
                 }),
             });
 
+            // Debugging response
+            console.log('Response:', response);
             if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Pendaftaran gagal:', errorData);
                 throw new Error('Pendaftaran gagal');
             }
 
@@ -148,6 +132,7 @@ const Register = () => {
                 >
                     <h3 className="text-center text-900 text-3xl font-medium mb-5">Register</h3>
 
+                    {/* Input Nama Karyawan */}
                     <div className="mb-3">
                         <label htmlFor="namaKaryawan" className="block text-900 text-xl font-medium mb-2">
                             Nama Karyawan
@@ -162,48 +147,7 @@ const Register = () => {
                         />
                     </div>
 
-                    <div className="mb-3">
-                        <label htmlFor="nik" className="block text-900 text-xl font-medium mb-2">
-                            NIK
-                        </label>
-                        <InputText
-                            id="nik"
-                            type="text"
-                            placeholder="Nomor Induk Karyawan"
-                            value={nik}
-                            onChange={(e) => setNik(e.target.value)}
-                            className="w-full p-3 md:w-30rem"
-                        />
-                    </div>
-
-                    <div className="mb-3">
-                        <label htmlFor="noHandphone" className="block text-900 text-xl font-medium mb-2">
-                            No Handphone
-                        </label>
-                        <InputText
-                            id="noHandphone"
-                            type="text"
-                            placeholder="Nomor Handphone"
-                            value={noHandphone}
-                            onChange={(e) => setNoHandphone(e.target.value)}
-                            className="w-full p-3 md:w-30rem"
-                        />
-                    </div>
-
-                    <div className="mb-3">
-                        <label htmlFor="alamat" className="block text-900 text-xl font-medium mb-2">
-                            Alamat
-                        </label>
-                        <InputText
-                            id="alamat"
-                            type="text"
-                            placeholder="Alamat"
-                            value={alamat}
-                            onChange={(e) => setAlamat(e.target.value)}
-                            className="w-full p-3 md:w-30rem"
-                        />
-                    </div>
-
+                    {/* Input Email */}
                     <div className="mb-3">
                         <label htmlFor="email" className="block text-900 text-xl font-medium mb-2">
                             Email
@@ -211,43 +155,30 @@ const Register = () => {
                         <InputText
                             id="email"
                             type="email"
-                            placeholder="Alamat Email"
+                            placeholder="Email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="w-full p-3 md:w-30rem"
                         />
                     </div>
 
+                    {/* Input Password */}
                     <div className="mb-3">
                         <label htmlFor="password" className="block text-900 text-xl font-medium mb-2">
-                            Kata Sandi
+                            Password
                         </label>
                         <Password
                             inputId="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Kata Sandi"
+                            placeholder="Password"
                             toggleMask
                             className="w-full"
                             inputClassName="w-full p-3 md:w-30rem"
                         />
                     </div>
 
-                    <div className="mb-3">
-                        <label htmlFor="confirmPassword" className="block text-900 text-xl font-medium mb-2">
-                            Konfirmasi Kata Sandi
-                        </label>
-                        <Password
-                            inputId="confirmPassword"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder="Konfirmasi Kata Sandi"
-                            toggleMask
-                            className="w-full"
-                            inputClassName="w-full p-3 md:w-30rem"
-                        />
-                    </div>
-
+                    {/* Checkbox Setuju */}
                     <div className="flex align-items-center justify-content-between mb-5 gap-5">
                         <div className="flex align-items-center">
                             <Checkbox

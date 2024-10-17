@@ -10,6 +10,7 @@ const cuti = () => {
     const [requests, setRequests] = useState([
         { 
             id_karyawan: 'K001', 
+            nama_karyawan: 'John Doe', 
             durasi: '8 jam', 
             tanggal_mulai: '2024-10-01', 
             tanggal_selesai: '2024-10-01', 
@@ -18,6 +19,7 @@ const cuti = () => {
         },
         { 
             id_karyawan: 'K002', 
+            nama_karyawan: 'Jane Smith', 
             durasi: '4 jam', 
             tanggal_mulai: '2024-10-02', 
             tanggal_selesai: '2024-10-02', 
@@ -26,6 +28,7 @@ const cuti = () => {
         },
         { 
             id_karyawan: 'K003', 
+            nama_karyawan: 'Alice Johnson', 
             durasi: '6 jam', 
             tanggal_mulai: '2024-10-03', 
             tanggal_selesai: '2024-10-03', 
@@ -34,6 +37,7 @@ const cuti = () => {
         },
         { 
             id_karyawan: 'K004', 
+            nama_karyawan: 'Bob Brown', 
             durasi: '8 jam', 
             tanggal_mulai: '2024-10-04', 
             tanggal_selesai: '2024-10-04', 
@@ -42,6 +46,7 @@ const cuti = () => {
         },
         { 
             id_karyawan: 'K005', 
+            nama_karyawan: 'Charlie Davis', 
             durasi: '8 jam', 
             tanggal_mulai: '2024-10-05', 
             tanggal_selesai: '2024-10-05', 
@@ -50,34 +55,49 @@ const cuti = () => {
         }
     ]);
 
-    // Template untuk menampilkan status dengan warna berbeda
+    // Fungsi untuk mengubah status ketika tombol diklik
+    const toggleStatus = (id_karyawan: string) => {
+        setRequests((prevRequests) =>
+            prevRequests.map((request) =>
+                request.id_karyawan === id_karyawan
+                    ? {
+                          ...request,
+                          status: request.status === 'disetujui' ? 'ditolak' : 'disetujui'
+                      }
+                    : request
+            )
+        );
+    };
+
+    // Template untuk menampilkan status sebagai button yang bisa diklik
     const statusBodyTemplate = (rowData: any) => {
         const status = rowData?.status || 'Status Tidak Tersedia';
-        let backgroundColor = '';
+        let label = '';
+        let className = '';
 
-        // Switch case untuk menentukan warna berdasarkan status
+        // Mengatur label dan className berdasarkan status
         switch (status) {
             case 'disetujui':
-                backgroundColor = 'green';
+                label = 'Disetujui';
+                className = 'p-button-success';
                 break;
             case 'ditolak':
-                backgroundColor = 'red';
+                label = 'Ditolak';
+                className = 'p-button-danger';
                 break;
             default:
-                backgroundColor = 'gray';
+                label = 'Tidak Tersedia';
+                className = 'p-button-secondary';
                 break;
         }
 
         return (
-            <span 
-                style={{ 
-                    backgroundColor, 
-                    color: 'white', 
-                    padding: '5px 10px', 
-                    borderRadius: '5px' 
-                }}>
-                {status}
-            </span>
+            <Button 
+                label={label} 
+                className={className} 
+                style={{ padding: '5px 10px' }} 
+                onClick={() => toggleStatus(rowData.id_karyawan)} // Mengubah status ketika tombol diklik
+            />
         );
     };
 
@@ -88,6 +108,7 @@ const cuti = () => {
                     <h5>Data Permohonan Cuti</h5>
                     <DataTable value={requests} paginator rows={5} responsiveLayout="scroll">
                         <Column field="id_karyawan" header="ID Karyawan" />
+                        <Column field="nama_karyawan" header="Nama Karyawan" />
                         <Column field="durasi" header="Durasi" />
                         <Column field="tanggal_mulai" header="Tanggal Mulai" />
                         <Column field="tanggal_selesai" header="Tanggal Selesai" />

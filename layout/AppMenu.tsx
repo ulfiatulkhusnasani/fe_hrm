@@ -19,15 +19,7 @@ const AppMenu = () => {
             label: 'KELOLA',
             items: [
                 { label: 'Karyawan', icon: 'pi pi-fw pi-check-square', to: '/pages/DataKaryawan' },
-                {
-                    label: 'Data',
-                    icon: 'pi pi-fw pi-id-card',
-                    items: [
-                        { label: 'Data Pegawai', icon: 'pi pi-fw pi-user', to: '/pages/Datapegawai' },
-                        { label: 'Data Jabatan', icon: 'pi pi-fw pi-briefcase', to: '/pages/Datajabatan' }
-                    ]
-                },                
-                { label: 'Overtime', icon: 'pi pi-fw pi-clock', class: 'rotated-icon' },
+                { label: 'Data Jabatan', icon: 'pi pi-fw pi-briefcase', to: '/pages/Datajabatan' },      
                 {
                     label: 'Absensi',
                     icon: 'pi pi-fw pi-list',

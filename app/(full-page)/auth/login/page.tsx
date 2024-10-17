@@ -22,45 +22,44 @@ const HalamanLogin = () => {
     );
 
     // HalamanLogin.js
-const handleSignIn = async () => {
-    try {
-        const response = await fetch('http://127.0.0.1:8000/api/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, kata_sandi: password }), // Ganti 'password' menjadi 'kata_sandi'
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            // Simpan token di Local Storage
-            localStorage.setItem('authToken', data.token);
-
-            Swal.fire({
-                title: 'Login Berhasil!',
-                text: 'Anda akan diarahkan ke dashboard.',
-                icon: 'success',
-            }).then(() => {
-                router.push('/'); // Redirect ke halaman dashboard
+    const handleSignIn = async () => {
+        try {
+            const response = await fetch('http://127.0.0.1:8000/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }), // Ganti 'kata_sandi' menjadi 'password'
             });
-        } else {
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Simpan token di Local Storage
+                localStorage.setItem('authToken', data.token);
+
+                Swal.fire({
+                    title: 'Login Berhasil!',
+                    text: 'Anda akan diarahkan ke dashboard.',
+                    icon: 'success',
+                }).then(() => {
+                    router.push('/'); // Redirect ke halaman dashboard
+                });
+            } else {
+                Swal.fire({
+                    title: 'Login Gagal',
+                    text: data.message || 'Kredensial tidak valid.',
+                    icon: 'error',
+                });
+            }
+        } catch (error) {
             Swal.fire({
-                title: 'Login Gagal',
-                text: data.message || 'Kredensial tidak valid.',
+                title: 'Kesalahan',
+                text: 'Tidak dapat terhubung ke server',
                 icon: 'error',
             });
         }
-    } catch (error) {
-        Swal.fire({
-            title: 'Kesalahan',
-            text: 'Tidak dapat terhubung ke server',
-            icon: 'error',
-        });
-    }
-};
-
+    };
 
     return (
         <div className={containerClassName} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F2F3F7', padding: '2rem' }}>
@@ -73,9 +72,9 @@ const handleSignIn = async () => {
                     <div>
                         <label htmlFor="email1" className="block text-900 text-xl font-medium mb-2">Email</label>
                         <InputText id="email1" type="text" placeholder="Email" className="w-full md:w-30rem mb-5" style={{ padding: '1rem' }} value={email} onChange={(e) => setEmail(e.target.value)} />
-                        <label htmlFor="password1" className="block text-900 font-medium text-xl mb-2">Kata Sandi</label>
+                        <label htmlFor="password1" className="block text-900 font-medium text-xl mb-2">Password</label>
                         <div style={{ position: 'relative' }}>
-                            <InputText id="password1" type={passwordVisible ? 'text' : 'password'} placeholder="Kata Sandi" className="w-full p-3 md:w-30rem" value={password} onChange={(e) => setPassword(e.target.value)} />
+                            <InputText id="password1" type={passwordVisible ? 'text' : 'password'} placeholder="Password" className="w-full p-3 md:w-30rem" value={password} onChange={(e) => setPassword(e.target.value)} />
                             <i className={`fas ${passwordVisible ? 'fa-eye-slash' : 'fa-eye'}`} onClick={() => setPasswordVisible(!passwordVisible)} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: '18px', color: '#888' }}></i>
                         </div>
                         <div className="flex align-items-center justify-content-between mb-5">
