@@ -30,27 +30,9 @@ const AppMenu = () => {
                         { label: 'Dinas luar kota', icon: 'pi pi-fw pi-info-circle', to: '/pages/Dinas' }
                     ]
                 },
-                { label: 'Lembur', icon: 'pi pi-fw pi-tablet', to: '/uikit/panel' },
-                { label: 'Lokasi', icon: 'pi pi-fw pi-map', to: '/uikit/Lokasi', preventExact: true }, // Ikon lokasi
-                { label: 'Message', icon: 'pi pi-fw pi-comment', to: '/uikit/message' },
-                { label: 'File', icon: 'pi pi-fw pi-file', to: '/uikit/file' },
-                { label: 'Kurva', icon: 'pi pi-fw pi-chart-bar', to: '/uikit/charts' }
-            ]
-        },
-        {
-            label: 'DATA',
-            icon: 'pi pi-fw pi-briefcase',
-            items: [
-                {
-                    label: 'Data penggajian',
-                    icon: 'pi pi-fw pi-user',
-                    // Path dapat ditambahkan jika diperlukan
-                },
-                {
-                    label: 'Timeline',
-                    icon: 'pi pi-fw pi-calendar',
-                    to: '/pages/timeline'
-                },
+                { label: 'Data Gaji', icon: 'pi pi-fw pi-money-bill', to: '/pages/Gaji' },
+                { label: 'Slip Gaji', icon: 'pi pi-fw pi-envelope', to: '/pages/Slip' },
+                { label: 'Laporan', icon: 'pi pi-fw pi-file', to: '/pages/Laporan' }
             ]
         },
         {

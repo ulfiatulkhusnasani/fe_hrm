@@ -4,69 +4,28 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from 'primereact/button';
 import { Menu } from 'primereact/menu';
 import { Calendar } from 'primereact/calendar';
-import { Chart } from 'primereact/chart';
-import { ChartData, ChartOptions } from 'chart.js';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import { LatLngExpression } from 'leaflet';
+import L from 'leaflet';
 import { addLocale, locale } from 'primereact/api';
+import { useRouter } from 'next/navigation'; // Import useRouter untuk navigasi
 
-// Define chart data and options
-const lineData: ChartData<'line'> = {
-    labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-    datasets: [
-        {
-            label: 'First Dataset',
-            data: [65, 59, 80, 81, 56, 55, 40],
-            fill: false,
-            backgroundColor: '#2f4860',
-            borderColor: '#2f4860',
-            tension: 0.4
-        },
-        {
-            label: 'Second Dataset',
-            data: [28, 48, 40, 19, 86, 27, 90],
-            fill: false,
-            backgroundColor: '#00bb7e',
-            borderColor: '#00bb7e',
-            tension: 0.4
-        }
-    ]
-};
-
-const lineOptions: ChartOptions<'line'> = {
-    plugins: {
-        legend: {
-            labels: {
-                color: '#495057'
-            }
-        }
-    },
-    scales: {
-        x: {
-            ticks: {
-                color: '#495057'
-            },
-            grid: {
-                color: '#ebedef'
-            }
-        },
-        y: {
-            ticks: {
-                color: '#495057'
-            },
-            grid: {
-                color: '#ebedef'
-            }
-        }
-    }
-};
+// Data locations with Madiun included
+const locations = [
+    { id: 6, name: 'PT. MARSTECH GLOBAL', position: [-7.6369966, 111.5426286] as [number, number] }, // Lokasi perusahaan
+];
 
 const Dashboard = () => {
     const menu1 = useRef<Menu>(null);
     const [calendarDate, setCalendarDate] = useState<Date | null>(null);
 
+    const router = useRouter(); // Inisialisasi useRouter
+
     // Configure the locale for the Calendar
     useEffect(() => {
         addLocale('en', {
-            firstDayOfWeek: 1, // Monday as the first day of the week
+            firstDayOfWeek: 1,
             dayNames: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
             dayNamesShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
             dayNamesMin: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
@@ -86,9 +45,38 @@ const Dashboard = () => {
         locale('en');
     }, []);
 
+    // Custom Pin Icon with a red pin
+    const pinIcon = new L.Icon({
+        iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png', // URL untuk pin warna merah
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [0, -41],
+    });
+
+    // Fungsi untuk handle klik container HADIR
+    const handleHadirClick = () => {
+        router.push('/pages/Hadir');  // Navigasi ke halaman Hadir
+    };
+
+    // Fungsi untuk handle klik container CUTI
+    const handleCutiClick = () => {
+        router.push('/pages/Cuti');  // Navigasi ke halaman Cuti
+    };
+
+    // Fungsi untuk handle klik container LEMBUR
+    const handleLemburClick = () => {
+        router.push('/pages/Lembur');  // Navigasi ke halaman Lembur
+    };
+
+    // Fungsi untuk handle klik container DINAS LUAR KOTA
+    const handleDinasClick = () => {
+        router.push('/pages/Dinas');  // Navigasi ke halaman Dinas Luar Kota
+    };
+
     return (
         <div className="grid">
-            <div className="col-12 lg:col-6 xl:col-3">
+            {/* Container HADIR */}
+            <div className="col-12 lg:col-6 xl:col-3" onClick={handleHadirClick} style={{ cursor: 'pointer' }}>
                 <div className="card mb-0">
                     <div className="flex justify-content-between mb-3">
                         <div>
@@ -104,27 +92,29 @@ const Dashboard = () => {
                     <span className="text-500">Lihat selengkapnya</span>
                 </div>
             </div>
-            <div className="col-12 lg:col-6 xl:col-3">
+            {/* Container CUTI */}
+            <div className="col-12 lg:col-6 xl:col-3" onClick={handleCutiClick} style={{ cursor: 'pointer' }}>
                 <div className="card mb-0">
                     <div className="flex justify-content-between mb-3">
                         <div>
-                            <span className="block text-500 font-medium mb-3">LIBUR</span>
+                            <span className="block text-500 font-medium mb-3">CUTI</span>
                             <div className="text-900 font-medium text-xl">0</div>
                         </div>
                         <div className="flex align-items-center justify-content-center" 
                              style={{ width: '2.5rem', height: '2.5rem', backgroundColor: '#7C96FF', borderRadius: '50%' }}>
-                            <i className="pi pi-clock text-xl" />
+                            <i className="pi pi-fw pi-exclamation-circle text-xl" />
                         </div>
                     </div>
                     <span className="text-green-500 font-medium">0 </span>
                     <span className="text-500">Lihat selengkapnya</span>
                 </div>
             </div>
-            <div className="col-12 lg:col-6 xl:col-3">
+            {/* Container LEMBUR */}
+            <div className="col-12 lg:col-6 xl:col-3" onClick={handleLemburClick} style={{ cursor: 'pointer' }}>
                 <div className="card mb-0">
                     <div className="flex justify-content-between mb-3">
                         <div>
-                            <span className="block text-500 font-medium mb-3">ALFA</span>
+                            <span className="block text-500 font-medium mb-3">LEMBUR</span>
                             <div className="text-900 font-medium text-xl">0</div>
                         </div>
                         <div className="flex align-items-center justify-content-center" 
@@ -136,16 +126,17 @@ const Dashboard = () => {
                     <span className="text-500">Lihat selengkapnya</span>
                 </div>
             </div>
-            <div className="col-12 lg:col-6 xl:col-3">
+            {/* Container DINAS LUAR KOTA */}
+            <div className="col-12 lg:col-6 xl:col-3" onClick={handleDinasClick} style={{ cursor: 'pointer' }}>
                 <div className="card mb-0">
                     <div className="flex justify-content-between mb-3">
                         <div>
-                            <span className="block text-500 font-medium mb-3">Cuti/izin</span>
+                            <span className="block text-500 font-medium mb-3">DINAS LUAR KOTA</span>
                             <div className="text-900 font-medium text-xl">0</div>
                         </div>
                         <div className="flex align-items-center justify-content-center" 
                              style={{ width: '2.5rem', height: '2.5rem', backgroundColor: '#EFE070', borderRadius: '50%' }}>
-                            <i className="pi pi-exclamation-circle text-xl" />
+                            <i className="pi pi-fw pi-car text-xl" />
                         </div>
                     </div>
                     <span className="text-green-500 font-medium">0 </span>
@@ -153,36 +144,24 @@ const Dashboard = () => {
                 </div>
             </div>
 
+            {/* Peta Lokasi */}
             <div className="col-12 xl:col-6">
-                <div className="card mb-0" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="card mb-0">
                     <div className="flex justify-content-between align-items-center mb-5">
-                        <h5>LAPORAN KEHADIRAN BULANAN</h5>
-                        <div>
-                            <Button
-                                type="button"
-                                icon="pi pi-ellipsis-v"
-                                rounded
-                                text
-                                className="p-button-plain"
-                                onClick={(event) => menu1.current?.toggle(event)}
-                            />
-                            <Menu
-                                ref={menu1}
-                                popup
-                                model={[
-                                    { label: 'Add New', icon: 'pi pi-fw pi-plus' },
-                                    { label: 'Remove', icon: 'pi pi-fw pi-minus' }
-                                ]}
-                            />
-                        </div>
+                        <h5>LOKASI PERUSAHAAN</h5>
                     </div>
-                    <div className="relative flex-grow" style={{ height: '400px' }}>
-                        <Chart
-                            type="line"
-                            data={lineData}
-                            options={lineOptions}
-                            style={{ height: '100%', width: '100%' }} // Ensures the chart fills the container
-                        />
+                    <div style={{ height: '400px', width: '100%' }}>
+                        <MapContainer center={[-7.6369966, 111.5426286]} zoom={14} style={{ height: '100%', width: '100%' }}>
+                            <TileLayer
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            />
+                            {locations.map((loc) => (
+                                <Marker key={loc.id} position={loc.position as LatLngExpression} icon={pinIcon}>
+                                    <Popup>{loc.name}</Popup>
+                                </Marker>
+                            ))}
+                        </MapContainer>
                     </div>
                 </div>
             </div>
@@ -204,11 +183,7 @@ const Dashboard = () => {
                             <Menu
                                 ref={menu1}
                                 popup
-                                model={[
-                                    { label: 'Add New', icon: 'pi pi-fw pi-plus' },
-                                    { label: 'Remove', icon: 'pi pi-fw pi-minus' }
-                                ]}
-                            />
+                                model={[{ label: 'Add New', icon: 'pi pi-fw pi-plus' }, { label: 'Remove', icon: 'pi pi-fw pi-minus' }]}/>
                         </div>
                     </div>
                     <div className="relative" style={{ width: '100%', height: '400px' }}>
