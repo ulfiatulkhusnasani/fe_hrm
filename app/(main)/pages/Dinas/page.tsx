@@ -14,6 +14,7 @@ import axios from 'axios';
 interface DinasLuarKotaEntry {
     no: number;
     id: string;
+    id_karyawan: number;
     nama: string;
     tanggalBerangkat: Date | null;
     tanggalKembali: Date | null;
@@ -37,6 +38,7 @@ const DinasLuarKota = () => {
     const [newEntry, setNewEntry] = useState<DinasLuarKotaEntry>({
         no: 0,
         id: '',
+        id_karyawan: 0,
         nama: '',
         tanggalBerangkat: null,  
         tanggalKembali: null,    
@@ -51,8 +53,17 @@ const DinasLuarKota = () => {
     const toast = React.useRef<Toast>(null);
 
     useEffect(() => {
-        fetchEmployees();
+        const fetchData = async () => {
+            await fetchEmployees();
+        };
+        fetchData();
     }, []);
+
+    useEffect(() => {
+        if (employees.length > 0) {
+            fetchDinasLuarKota();
+        }
+    }, [employees]);
 
     const fetchEmployees = async () => {
         const token = localStorage.getItem('authToken');
@@ -69,30 +80,63 @@ const DinasLuarKota = () => {
         }
     };
 
+    const fetchDinasLuarKota = async () => {
+        const token = localStorage.getItem('authToken');
+        try {
+            const response = await axios.get('http://localhost:8000/api/dinas_luarkota', {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                }
+            });
+            const updatedData = response.data.map((entry: any, index: number) => {
+                const employee = employees.find(emp => emp.id === entry.id_karyawan.toString());
+                return {
+                    ...entry,
+                    no: index + 1,
+                    nama: employee ? employee.nama_karyawan : 'Unknown'
+                };
+            });
+            setDinasLuarKota(updatedData);
+        } catch (error) {
+            console.error('Error fetching dinas luar kota:', error);
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Gagal mengambil data dinas luar kota.', life: 3000 });
+        }
+    };
+
     const handleTambahClick = () => {
         setShowDialog(true); 
     };
 
     const handleSave = async () => {
         const newEntryData = { 
-            ...newEntry,
-            id_karyawan: newEntry.id, 
-            tgl_berangkat: newEntry.tanggalBerangkat?.toISOString(), 
-            tgl_kembali: newEntry.tanggalKembali?.toISOString()
+            id_karyawan: parseInt(newEntry.id),
+            tgl_berangkat: newEntry.tanggalBerangkat ? newEntry.tanggalBerangkat.toISOString().split('T')[0] : '',
+            tgl_kembali: newEntry.tanggalKembali ? newEntry.tanggalKembali.toISOString().split('T')[0] : '',
+            kota_tujuan: newEntry.kotaTujuan,
+            keperluan: newEntry.keperluan,
+            biaya_transport: newEntry.biayaTransport,
+            biaya_penginapan: newEntry.biayaPenginapan,
+            uang_harian: newEntry.uangHarian,
         };
 
         try {
             const token = localStorage.getItem('authToken');
-            const response = await axios.post('http://localhost:8000/api/dinas-luar-kota', newEntryData, {
+            const response = await axios.post('http://localhost:8000/api/dinas_luarkota', newEntryData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 }
             });
-            setDinasLuarKota([...dinasLuarKota, response.data]);
+            const savedEntry = {
+                ...response.data,
+                no: dinasLuarKota.length + 1,
+                nama: employees.find(emp => emp.id === response.data.id_karyawan.toString())?.nama_karyawan || 'Unknown'
+            };
+            setDinasLuarKota([...dinasLuarKota, savedEntry]);
             setShowDialog(false);
             setNewEntry({
                 no: 0,
                 id: '',
+                id_karyawan: 0,
                 nama: '',
                 tanggalBerangkat: null,
                 tanggalKembali: null,
@@ -106,7 +150,11 @@ const DinasLuarKota = () => {
             toast.current?.show({ severity: 'success', summary: 'Berhasil', detail: 'Data berhasil ditambahkan!', life: 3000 });
         } catch (error) {
             console.error('Error saving data:', error);
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Gagal menyimpan data.', life: 3000 });
+            if (axios.isAxiosError(error) && error.response) {
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: `Gagal menyimpan data: ${JSON.stringify(error.response.data)}`, life: 3000 });
+            } else {
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Gagal menyimpan data.', life: 3000 });
+            }
         }
     };
 
@@ -119,6 +167,27 @@ const DinasLuarKota = () => {
         setNewEntry({ ...newEntry, [field]: value !== undefined ? value : null });
     };
 
+    const handleDelete = async (id: string) => {
+        const token = localStorage.getItem('authToken');
+        try {
+            await axios.delete(`http://localhost:8000/api/dinas_luarkota/${id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                }
+            });
+            setDinasLuarKota(dinasLuarKota.filter((entry) => entry.id !== id));
+            toast.current?.show({ severity: 'success', summary: 'Berhasil', detail: 'Data berhasil dihapus!', life: 3000 });
+        } catch (error) {
+            console.error('Error deleting data:', error);
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Gagal menghapus data.', life: 3000 });
+        }
+    };
+
+    const handleEdit = (entry: DinasLuarKotaEntry) => {
+        setNewEntry(entry);
+        setShowDialog(true);
+    };
+
     const dialogFooter = (
         <div>
             <Button label="Batal" icon="pi pi-times" onClick={() => setShowDialog(false)} className="p-button-text" />
@@ -126,35 +195,54 @@ const DinasLuarKota = () => {
         </div>
     );
 
+    const actionBodyTemplate = (rowData: DinasLuarKotaEntry) => {
+        return (
+            <div className="actions">
+                <Button icon="pi pi-pencil" className="p-button-rounded p-button-success mr-2" onClick={() => handleEdit(rowData)} />
+                <Button icon="pi pi-trash" className="p-button-rounded p-button-danger" onClick={() => handleDelete(rowData.id)} />
+            </div>
+        );
+    };
+
     return (
         <div className="card">
             <h5>Data Dinas Luar Kota</h5>
             <Button label="Tambah Dinas" icon="pi pi-plus" onClick={handleTambahClick} className="p-mb-3" />
             <Toast ref={toast} />
-            <DataTable value={dinasLuarKota}>
+            <DataTable value={dinasLuarKota} paginator rows={10} rowsPerPageOptions={[5, 10, 20]}>
                 <Column field="no" header="No" />
-                <Column field="id" header="ID" />
-                <Column field="nama" header="Nama Karyawan" />
-                <Column field="tanggalBerangkat" header="Tanggal Berangkat" body={(rowData) => rowData.tanggalBerangkat ? new Date(rowData.tanggalBerangkat).toLocaleDateString() : ''} />
-                <Column field="tanggalKembali" header="Tanggal Kembali" body={(rowData) => rowData.tanggalKembali ? new Date(rowData.tanggalKembali).toLocaleDateString() : ''} />
-                <Column field="kotaTujuan" header="Kota Tujuan" />
+                <Column field="id_karyawan" header="ID Karyawan" />
+                <Column field="tgl_berangkat" header="Tanggal Berangkat" body={(rowData) => rowData.tgl_berangkat ? new Date(rowData.tgl_berangkat).toLocaleDateString() : ''} />
+                <Column field="tgl_kembali" header="Tanggal Kembali" body={(rowData) => rowData.tgl_kembali ? new Date(rowData.tgl_kembali).toLocaleDateString() : ''} />
+                <Column field="kota_tujuan" header="Kota Tujuan" />
                 <Column field="keperluan" header="Keperluan" />
-                <Column field="biayaTransport" header="Biaya Transport" />
-                <Column field="biayaPenginapan" header="Biaya Penginapan" />
-                <Column field="uangHarian" header="Uang Harian" />
-                <Column field="totalBiaya" header="Total Biaya" />
+                <Column field="biaya_transport" header="Biaya Transport" />
+                <Column field="biaya_penginapan" header="Biaya Penginapan" />
+                <Column field="uang_harian" header="Uang Harian" />
+                <Column field="total_biaya" header="Total Biaya" />
+                <Column body={actionBodyTemplate} header="Aksi" />
             </DataTable>
 
             <Dialog header="Tambah Dinas Luar Kota" visible={showDialog} style={{ width: '50vw' }} footer={dialogFooter} onHide={() => setShowDialog(false)}>
                 <div className="p-fluid">
+                    
                     <div className="p-field">
-                        <label>ID</label>
-                        <InputText value={newEntry.id} onChange={(e) => handleChange(e, 'id')} />
-                    </div>
-                    <div className="p-field">
-                        <label>Nama Karyawan</label>
-                        <InputText value={newEntry.nama} onChange={(e) => handleChange(e, 'nama')} />
-                    </div>
+    <label>Nama Karyawan</label>
+    <select value={newEntry.id} onChange={(e) => {
+        const selectedEmployee = employees.find(emp => emp.id === e.target.value);
+        setNewEntry({
+            ...newEntry,
+            id: e.target.value,
+            id_karyawan: parseInt(e.target.value),
+            nama: selectedEmployee ? selectedEmployee.nama_karyawan : ''
+        });
+    }}>
+        <option value="">Pilih Karyawan</option>
+        {employees.map((employee) => (
+            <option key={employee.id} value={employee.id}>{employee.nama_karyawan}</option>
+        ))}
+    </select>
+</div>
                     <div className="p-field">
                         <label>Tanggal Berangkat</label>
                         <Calendar value={newEntry.tanggalBerangkat} onChange={(e) => handleChange(e, 'tanggalBerangkat')} dateFormat="yy-mm-dd" />

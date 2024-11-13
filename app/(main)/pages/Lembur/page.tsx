@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useEffect, useState, useRef } from 'react';
 import { DataTable } from 'primereact/datatable';
@@ -13,11 +13,11 @@ import axios from 'axios';
 
 interface OvertimeEntry {
     no: number;
-    idKaryawan: string;
+    id_karyawan: number;
     nama: string;
-    tanggalLembur: string;
-    jamLembur: number;
-    upahLembur: number;
+    tgl_lembur: string;
+    jam_lembur: string;
+    upah_lembur: number | null;
 }
 
 interface Employee {
@@ -29,17 +29,15 @@ const Lembur = () => {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [overtime, setOvertime] = useState<OvertimeEntry[]>([]);
     const [newEntry, setNewEntry] = useState<{
-        idKaryawan: string;
+        id_karyawan: number;
         nama: string;
-        tanggalLembur: Date | null;
-        jamLembur: number;
-        upahLembur: number;
+        tgl_lembur: Date | null;
+        jam_lembur: string;
     }>({
-        idKaryawan: '',
+        id_karyawan: 0,
         nama: '',
-        tanggalLembur: null,
-        jamLembur: 0,
-        upahLembur: 0,
+        tgl_lembur: null,
+        jam_lembur: '17:00:00',
     });
     const [isDialogVisible, setDialogVisible] = useState(false);
     const [editingEntry, setEditingEntry] = useState<OvertimeEntry | null>(null);
@@ -65,64 +63,55 @@ const Lembur = () => {
         }
     };
 
-    const getEmployeeNameById = (idKaryawan: string) => {
-        const employee = employees.find((emp) => emp.id === idKaryawan);
+    const getEmployeeNameById = (id_karyawan: number) => {
+        const employee = employees.find((emp) => parseInt(emp.id) === id_karyawan);
         return employee ? employee.nama_karyawan : 'Unknown';
     };
 
     const handleDialogOpen = () => {
-        setNewEntry({ idKaryawan: '', nama: '', tanggalLembur: null, jamLembur: 0, upahLembur: 0 });
+        setNewEntry({ id_karyawan: 0, nama: '', tgl_lembur: null, jam_lembur: '17:00:00' });
         setEditingEntry(null); // Reset entry ketika membuka dialog
         setDialogVisible(true);
     };
 
-    const formatTime = (hours: number) => {
-        const h = Math.floor(hours);
-        const m = Math.floor((hours - h) * 60);
-        const s = Math.round(((hours - h) * 60 - m) * 60);
-        return `${h} jam ${m} menit ${s} detik`;
-    };    
-
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
-    };    
-
     const handleSubmit = async () => {
         // Validasi
-        if (!newEntry.idKaryawan || !newEntry.tanggalLembur || newEntry.jamLembur <= 0 || newEntry.upahLembur <= 0) {
-            toast.current?.show({ severity: 'warn', summary: 'Peringatan', detail: 'Semua field harus diisi dengan benar.', life: 3000 });
+        if (!newEntry.id_karyawan || !newEntry.tgl_lembur || newEntry.jam_lembur === '00:00:00') {
+            toast.current?.show({ severity: 'warn', summary: 'Peringatan', detail: 'Field id_karyawan, tgl_lembur, dan jam_lembur harus diisi dengan benar.', life: 3000 });
             return;
         }
 
         const newOvertime: OvertimeEntry = {
-            no: editingEntry ? editingEntry.no : overtime.length + 1, // Gunakan no yang sama jika sedang mengedit
-            idKaryawan: newEntry.idKaryawan,
-            nama: getEmployeeNameById(newEntry.idKaryawan),
-            tanggalLembur: newEntry.tanggalLembur?.toISOString().split('T')[0] || '', // Tambahkan penanganan untuk null
-            jamLembur: newEntry.jamLembur,
-            upahLembur: newEntry.upahLembur,
+            no: editingEntry ? editingEntry.no : overtime.length + 1,
+            id_karyawan: newEntry.id_karyawan,
+            nama: getEmployeeNameById(newEntry.id_karyawan),
+            tgl_lembur: newEntry.tgl_lembur?.toISOString().split('T')[0] || '',
+            jam_lembur: newEntry.jam_lembur,
+            upah_lembur: null,
         };
 
         try {
             const token = localStorage.getItem('authToken');
-            const response = editingEntry 
-                ? await axios.put(`http://localhost:8000/api/lembur/${editingEntry.no}`, newOvertime, { // Update jika sedang mengedit
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                })
-                : await axios.post('http://localhost:8000/api/lembur', newOvertime, { // Tambah jika baru
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+            const response = editingEntry
+                ? await axios.put(`http://localhost:8000/api/lembur/${editingEntry.no}`, newOvertime, {
+                      headers: {
+                          Authorization: `Bearer ${token}`,
+                      },
+                  })
+                : await axios.post('http://localhost:8000/api/lembur', newOvertime, {
+                      headers: {
+                          Authorization: `Bearer ${token}`,
+                      },
+                  });
 
             if (response.status === 200 || response.status === 201) {
                 setOvertime((prevOvertime) => {
                     if (editingEntry) {
-                        return prevOvertime.map((entry) => entry.no === editingEntry.no ? newOvertime : entry); // Update data lembur
+                        return prevOvertime.map((entry) =>
+                            entry.no === editingEntry.no ? { ...entry, ...newOvertime } : entry
+                        ) as OvertimeEntry[];
                     } else {
-                        return [...prevOvertime, newOvertime]; // Tambah data lembur baru
+                        return [...prevOvertime, newOvertime] as OvertimeEntry[];
                     }
                 });
                 setDialogVisible(false);
@@ -130,8 +119,12 @@ const Lembur = () => {
             } else {
                 console.error('Gagal menyimpan data lembur:', response.statusText);
             }
-        } catch (error) {
-            console.error('Error:', error);
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error Response Data:', error.response?.data);
+            } else {
+                console.error('Error:', error);
+            }
             toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Gagal menyimpan data lembur.', life: 3000 });
         }
     };
@@ -139,11 +132,10 @@ const Lembur = () => {
     const handleEdit = (entry: OvertimeEntry) => {
         setEditingEntry(entry);
         setNewEntry({
-            idKaryawan: entry.idKaryawan,
+            id_karyawan: entry.id_karyawan,
             nama: entry.nama,
-            tanggalLembur: new Date(entry.tanggalLembur),
-            jamLembur: entry.jamLembur,
-            upahLembur: entry.upahLembur,
+            tgl_lembur: new Date(entry.tgl_lembur),
+            jam_lembur: entry.jam_lembur
         });
         setDialogVisible(true);
     };
@@ -158,8 +150,12 @@ const Lembur = () => {
             });
             setOvertime((prevOvertime) => prevOvertime.filter((o) => o.no !== entry.no));
             toast.current?.show({ severity: 'success', summary: 'Berhasil', detail: 'Data lembur berhasil dihapus!', life: 3000 });
-        } catch (error) {
-            console.error('Error deleting overtime:', error);
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error Response Data:', error.response?.data);
+            } else {
+                console.error('Error:', error);
+            }
             toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Gagal menghapus data lembur.', life: 3000 });
         }
     };
@@ -179,51 +175,44 @@ const Lembur = () => {
                         />
                     </div>
 
-                    <DataTable value={overtime} responsiveLayout="scroll" className="p-datatable-striped">
-                        <Column 
-                            field="no" 
-                            header="No" 
-                            className="text-center" 
-                            style={{ width: '50px', textAlign: 'center' }} 
-                        />
-                        <Column 
-                            field="tanggalLembur" 
-                            header="Tanggal Lembur" 
-                            className="text-center" 
-                            style={{ width: '150px', textAlign: 'right' }} 
-                        />
-                        <Column 
-                            field="jamLembur" 
-                            header="Jam Lembur" 
-                            body={(rowData) => formatTime(rowData.jamLembur)} 
-                            className="text-center" 
-                            style={{ width: '170px', textAlign: 'right' }} 
-                        />
-                        <Column 
-                            field="upahLembur" 
-                            header="Upah Lembur" 
-                            body={(rowData) => formatCurrency(rowData.upahLembur)} 
-                            className="text-center" 
-                            style={{ width: '150px', textAlign: 'right' }} 
-                        />
-                        <Column
-                            header="Aksi"
-                            body={(rowData) => (
-                                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                    <Button 
-                                        icon="pi pi-pencil" 
-                                        className="mr-2 p-button-success" 
-                                        onClick={() => handleEdit(rowData)} 
-                                    />
-                                    <Button 
-                                        icon="pi pi-trash" 
-                                        className="p-button-danger" 
-                                        onClick={() => handleDelete(rowData)} 
-                                    />
-                                </div>
-                            )}
-                        />
-                    </DataTable>
+                    <DataTable value={overtime} responsiveLayout="scroll" className="p-datatable-striped" style={{ padding: '1rem' }}>
+    <Column 
+        field="no" 
+        header="No" 
+        className="text-center" 
+        style={{ width: '50px', textAlign: 'right', padding: '8px' }} 
+    />
+    <Column 
+        field="tgl_lembur" 
+        header="Tanggal Lembur" 
+        className="text-center" 
+        style={{ width: '150px', textAlign: 'right', padding: '8px' }} 
+    />
+    <Column 
+        field="jam_lembur" 
+        header="Jam Lembur" 
+        className="text-center" 
+        style={{ width: '100px', textAlign: 'right', padding: '8px' }} 
+    />
+    <Column
+        header="Aksi"
+        body={(rowData) => (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <Button 
+                    icon="pi pi-pencil" 
+                    className="mr-2 p-button-success" 
+                    onClick={() => handleEdit(rowData)} 
+                />
+                <Button 
+                    icon="pi pi-trash" 
+                    className="p-button-danger" 
+                    onClick={() => handleDelete(rowData)} 
+                />
+            </div>
+        )}
+        style={{ width: '50px', textAlign: 'right', padding: '8px' }}
+    />
+</DataTable>
 
                     <Dialog 
                         visible={isDialogVisible} 
@@ -240,44 +229,39 @@ const Lembur = () => {
                             <label htmlFor="idKaryawan">Karyawan</label>
                             <Dropdown
                                 id="idKaryawan"
-                                value={newEntry.idKaryawan}
+                                value={newEntry.id_karyawan}
                                 options={employees}
-                                onChange={(e) => setNewEntry({ ...newEntry, idKaryawan: e.value })}
+                                onChange={(e) => setNewEntry({ ...newEntry, id_karyawan: parseInt(e.value || '0') })}
                                 optionLabel="nama_karyawan"
+                                optionValue="id"
                                 placeholder="Pilih Karyawan"
                             />
                         </div>
                         <div className="p-field">
-                            <label htmlFor="tanggalLembur">Tanggal Lembur</label>
+                            <label htmlFor="tgl_lembur">Tanggal Lembur</label>
                             <Calendar
-    id="tanggalLembur"
-    value={newEntry.tanggalLembur ?? null}
-    onChange={(e) => setNewEntry({ ...newEntry, tanggalLembur: e.value ?? null })}
-    dateFormat="yy-mm-dd"
-/>
-                        </div>
-                        <div className="p-field">
-                            <label htmlFor="jamLembur">Jam Lembur</label>
-                            <InputNumber
-                                id="jamLembur"
-                                value={newEntry.jamLembur}
-                                onValueChange={(e) => setNewEntry({ ...newEntry, jamLembur: e.value || 0 })}
-                                mode="decimal"
-                                min={0}
-                                max={24}
-                                suffix=" jam"
-                                step={0.25}
+                                id="tgl_lembur"
+                                value={newEntry.tgl_lembur ?? null}
+                                onChange={(e) => setNewEntry({ ...newEntry, tgl_lembur: e.value ?? null })}
+                                dateFormat="yy-mm-dd"
                             />
                         </div>
                         <div className="p-field">
-                            <label htmlFor="upahLembur">Upah Lembur</label>
+                            <label htmlFor="jam_lembur">Jam Lembur</label>
                             <InputNumber
-                                id="upahLembur"
-                                value={newEntry.upahLembur}
-                                onValueChange={(e) => setNewEntry({ ...newEntry, upahLembur: e.value || 0 })}
-                                mode="currency"
-                                currency="IDR"
-                                locale="id-ID"
+                                id="jam_lembur"
+                                value={parseInt(newEntry.jam_lembur.split(':')[0]) - 17}
+                                onValueChange={(e) => {
+                                    if (e.value != null) {
+                                        const updatedHour = 17 + e.value;
+                                        setNewEntry({ ...newEntry, jam_lembur: `${updatedHour.toString().padStart(2, '0')}:00:00` });
+                                    }
+                                }}
+                                mode="decimal"
+                                min={0}
+                                max={24 - 17}
+                                suffix=" jam"
+                                step={1}
                             />
                         </div>
                     </Dialog>

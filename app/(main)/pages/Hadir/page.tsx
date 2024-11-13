@@ -344,6 +344,13 @@ const Hadir = () => {
     <Column field="jam_masuk" header="Jam Masuk" />
     <Column field="status" header="Status" />
     <Column 
+        field="foto_masuk" 
+        header="Foto Masuk" 
+        body={(rowData) => rowData.foto_masuk ? <img src={rowData.foto_masuk} alt="Foto Masuk" width="50" height="50" /> : 'Tidak Tersedia'} 
+    />
+    <Column field="latitude_masuk" header="Latitude" />
+    <Column field="longitude_masuk" header="Longitude" />
+    <Column 
         header="Aksi" 
         body={(rowData) => (
             <div className="d-flex">

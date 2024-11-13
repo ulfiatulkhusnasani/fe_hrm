@@ -180,7 +180,7 @@ const Cuti = () => {
             alasan: '',
             keterangan: '',
             durasi: 0,
-            status: 'menunggu',
+            status: 'disetujui',
         });
     };
 

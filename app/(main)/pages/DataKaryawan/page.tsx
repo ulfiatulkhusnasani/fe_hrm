@@ -258,8 +258,8 @@ const DataKaryawan = () => {
           </div>
 
           <div className="flex justify-content-end">
-            <Button label="Simpan" icon="pi pi-check" className="p-button-success" onClick={simpanKaryawan} />
             <Button label="Batal" icon="pi pi-times" className="p-button-danger ml-2" onClick={sembunyikanDialog} />
+            <Button label="Simpan" icon="pi pi-check" className="p-button-success" onClick={simpanKaryawan} />
           </div>
         </Panel>
       </Dialog>
