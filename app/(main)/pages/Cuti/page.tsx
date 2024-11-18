@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import React, { useState, useEffect } from 'react';
 import { DataTable } from 'primereact/datatable';
@@ -12,11 +12,11 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 interface LeaveRequest {
     id: number;
     id_karyawan: string;
-    tgl_mulai: string; // Mengubah nama dari 'tanggal_mulai' ke 'tgl_mulai'
-    tgl_selesai: string; // Mengubah nama dari 'tanggal_selesai' ke 'tgl_selesai'
+    tgl_mulai: string;
+    tgl_selesai: string;
     alasan: string;
     keterangan: string;
-    durasi: number;
+    durasi: string;
     status: string;
 }
 
@@ -40,9 +40,10 @@ const Cuti = () => {
         tgl_selesai: '',
         alasan: '',
         keterangan: '',
-        durasi: 0,
+        durasi: '0',
         status: 'menunggu',
     });
+    const [isEditMode, setIsEditMode] = useState(false);
 
     const fetchRequests = async () => {
         const token = localStorage.getItem('authToken');
@@ -140,6 +141,13 @@ const Cuti = () => {
     const addNewLeaveRequest = () => {
         setDialogVisible(true);
         resetNewRequest();
+        setIsEditMode(false);
+    };
+
+    const editLeaveRequest = (request: LeaveRequest) => {
+        setNewRequest(request);
+        setIsEditMode(true);
+        setDialogVisible(true);
     };
 
     const handleSubmit = async () => {
@@ -150,20 +158,48 @@ const Cuti = () => {
         }
 
         try {
-            const response = await axios.post('http://localhost:8000/api/cuti', {
-                id_karyawan: newRequest.id_karyawan,
-                tgl_mulai: newRequest.tgl_mulai,
-                tgl_selesai: newRequest.tgl_selesai,
-                alasan: newRequest.alasan,
-                keterangan: newRequest.keterangan,
-                durasi: newRequest.durasi,
-                status: newRequest.status,
-            }, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            setRequests([...requests, response.data]);
+            let response;
+
+            if (isEditMode) {
+                response = await axios.put(`http://localhost:8000/api/cuti/${newRequest.id}`, {
+                    id_karyawan: newRequest.id_karyawan,
+                    tgl_mulai: newRequest.tgl_mulai,
+                    tgl_selesai: newRequest.tgl_selesai,
+                    alasan: newRequest.alasan,
+                    keterangan: newRequest.keterangan,
+                    durasi: Number(newRequest.durasi),
+                    status: newRequest.status,
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+            } else {
+                response = await axios.post('http://localhost:8000/api/cuti', {
+                    id_karyawan: newRequest.id_karyawan,
+                    tgl_mulai: newRequest.tgl_mulai,
+                    tgl_selesai: newRequest.tgl_selesai,
+                    alasan: newRequest.alasan,
+                    keterangan: newRequest.keterangan,
+                    durasi: Number(newRequest.durasi),
+                    status: newRequest.status,
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+            }
+
+            if (isEditMode) {
+                setRequests((prevRequests) =>
+                    prevRequests.map((request) =>
+                        request.id === response.data.id ? response.data : request
+                    )
+                );
+            } else {
+                setRequests((prevRequests) => [...prevRequests, response.data]);
+            }
+
             setDialogVisible(false);
             resetNewRequest();
         } catch (error) {
@@ -179,14 +215,9 @@ const Cuti = () => {
             tgl_selesai: '',
             alasan: '',
             keterangan: '',
-            durasi: 0,
-            status: 'disetujui',
+            durasi: '0',
+            status: 'menunggu',
         });
-    };
-
-    const editLeaveRequest = (request: LeaveRequest) => {
-        setNewRequest(request);
-        setDialogVisible(true);
     };
 
     const deleteLeaveRequest = async (id: number) => {
@@ -202,7 +233,7 @@ const Cuti = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            setRequests(requests.filter((request) => request.id !== id));
+            setRequests((prevRequests) => prevRequests.filter((request) => request.id !== id));
         } catch (error) {
             handleAxiosError(error, 'menghapus permohonan cuti');
         }
@@ -228,60 +259,44 @@ const Cuti = () => {
                     </div>
 
                     <DataTable value={requests} responsiveLayout="scroll" className="custom-datatable">
-    <Column field="id_karyawan" header="ID Karyawan" style={{ width: '10%' }} />
-    <Column field="tgl_mulai" header="Tanggal Mulai" style={{ width: '15%' }} />
-    <Column field="tgl_selesai" header="Tanggal Selesai" style={{ width: '15%' }} />
-    <Column field="alasan" header="Alasan" style={{ width: '20%' }} /> {/* Kolom Alasan Ditambahkan */}
-    <Column field="keterangan" header="Keterangan" style={{ width: '20%' }} />
-    <Column field="durasi" header="Durasi" style={{ width: '10%' }} />
-    <Column field="status" header="Status" style={{ width: '10%' }} body={statusBodyTemplate} />
-    <Column header="Aksi" body={actionBodyTemplate} style={{ width: '10%' }} />
-</DataTable>
+                        <Column field="id_karyawan" header="ID Karyawan" style={{ width: '10%' }} />
+                        <Column field="tgl_mulai" header="Tanggal Mulai" style={{ width: '15%' }} />
+                        <Column field="tgl_selesai" header="Tanggal Selesai" style={{ width: '15%' }} />
+                        <Column field="alasan" header="Alasan" style={{ width: '20%' }} />
+                        <Column field="keterangan" header="Keterangan" style={{ width: '20%' }} />
+                        <Column field="durasi" header="Durasi" style={{ width: '10%' }} />
+                        <Column field="status" header="Status" body={statusBodyTemplate} style={{ width: '10%' }} />
+                        <Column body={actionBodyTemplate} style={{ width: '10%' }} />
+                    </DataTable>
 
-<Dialog header="Tambah Permohonan Cuti" visible={dialogVisible} style={{ width: '50vw' }} onHide={() => setDialogVisible(false)}>
-    <div className="field">
-        <label htmlFor="id_karyawan">ID Karyawan</label>
-        <select
-            id="id_karyawan"
-            value={newRequest.id_karyawan}
-            onChange={(e) => setNewRequest({ ...newRequest, id_karyawan: e.target.value })}
-        >
-            <option value="">Pilih Karyawan</option>
-            {karyawanList.map((karyawan) => (
-                <option key={karyawan.id} value={karyawan.id}>{karyawan.id}</option>
-            ))}
-        </select>
-    </div>
-    <div className="field">
-        <label htmlFor="tgl_mulai">Tanggal Mulai</label>
-        <InputText type="date" id="tgl_mulai" value={newRequest.tgl_mulai} onChange={(e) => setNewRequest({ ...newRequest, tgl_mulai: e.target.value })} />
-    </div>
-    <div className="field">
-        <label htmlFor="tgl_selesai">Tanggal Selesai</label>
-        <InputText type="date" id="tgl_selesai" value={newRequest.tgl_selesai} onChange={(e) => setNewRequest({ ...newRequest, tgl_selesai: e.target.value })} />
-    </div>
-    <div className="field">
-        <label htmlFor="alasan">Alasan</label> {/* Tambahkan Alasan pada Form */}
-        <InputText id="alasan" value={newRequest.alasan} onChange={(e) => setNewRequest({ ...newRequest, alasan: e.target.value })} />
-    </div>
-    <div className="field">
-        <label htmlFor="keterangan">Keterangan</label>
-        <InputText id="keterangan" value={newRequest.keterangan} onChange={(e) => setNewRequest({ ...newRequest, keterangan: e.target.value })} />
-    </div>
-    <div className="field">
-        <label htmlFor="durasi">Durasi</label>
-        <InputText
-            type="number"
-            id="durasi"
-            value={newRequest.durasi.toString()}
-            onChange={(e) => setNewRequest({ ...newRequest, durasi: Number(e.target.value) })}
-        />
-    </div>
-    <div className="field">
-        <Button label="Submit" icon="pi pi-check" className="p-button-success" onClick={handleSubmit} />
-    </div>
-</Dialog>
+                    <Dialog header="Permohonan Cuti" visible={dialogVisible} onHide={() => setDialogVisible(false)}>
+                        <div className="field">
+                            <label htmlFor="id_karyawan">ID Karyawan</label>
+                            <InputText id="id_karyawan" value={newRequest.id_karyawan} onChange={(e) => setNewRequest({ ...newRequest, id_karyawan: e.target.value })} />
+                        </div>
 
+                        <div className="field">
+                            <label htmlFor="tgl_mulai">Tanggal Mulai</label>
+                            <InputText id="tgl_mulai" value={newRequest.tgl_mulai} onChange={(e) => setNewRequest({ ...newRequest, tgl_mulai: e.target.value })} />
+                        </div>
+
+                        <div className="field">
+                            <label htmlFor="tgl_selesai">Tanggal Selesai</label>
+                            <InputText id="tgl_selesai" value={newRequest.tgl_selesai} onChange={(e) => setNewRequest({ ...newRequest, tgl_selesai: e.target.value })} />
+                        </div>
+
+                        <div className="field">
+                            <label htmlFor="alasan">Alasan</label>
+                            <InputText id="alasan" value={newRequest.alasan} onChange={(e) => setNewRequest({ ...newRequest, alasan: e.target.value })} />
+                        </div>
+
+                        <div className="field">
+                            <label htmlFor="keterangan">Keterangan</label>
+                            <InputText id="keterangan" value={newRequest.keterangan} onChange={(e) => setNewRequest({ ...newRequest, keterangan: e.target.value })} />
+                        </div>
+
+                        <Button label="Simpan" icon="pi pi-check" onClick={handleSubmit} />
+                    </Dialog>
                 </div>
             </div>
         </div>

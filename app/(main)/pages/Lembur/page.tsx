@@ -1,4 +1,4 @@
-"use client";
+"use client";  
 
 import React, { useEffect, useState, useRef } from 'react';
 import { DataTable } from 'primereact/datatable';
@@ -7,7 +7,7 @@ import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 import { Dialog } from 'primereact/dialog';
 import { Calendar } from 'primereact/calendar';
-import { InputNumber } from 'primereact/inputnumber';
+import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
 import axios from 'axios';
 
@@ -16,7 +16,8 @@ interface OvertimeEntry {
     id_karyawan: number;
     nama: string;
     tgl_lembur: string;
-    jam_lembur: string;
+    jam_keluar: string;
+    durasi_lembur: string;
     upah_lembur: number | null;
 }
 
@@ -32,13 +33,15 @@ const Lembur = () => {
         id_karyawan: number;
         nama: string;
         tgl_lembur: Date | null;
-        jam_lembur: string;
+        jam_keluar: string;
+        durasi_lembur: string;
     }>({
         id_karyawan: 0,
         nama: '',
-        tgl_lembur: null,
-        jam_lembur: '17:00:00',
-    });
+        tgl_lembur: null, // Ensuring this is null by default
+        jam_keluar: '17:00:00',
+        durasi_lembur: ''
+    });    
     const [isDialogVisible, setDialogVisible] = useState(false);
     const [editingEntry, setEditingEntry] = useState<OvertimeEntry | null>(null);
     const toast = useRef<Toast>(null);
@@ -69,15 +72,24 @@ const Lembur = () => {
     };
 
     const handleDialogOpen = () => {
-        setNewEntry({ id_karyawan: 0, nama: '', tgl_lembur: null, jam_lembur: '17:00:00' });
+        setNewEntry({ id_karyawan: 0, nama: '', tgl_lembur: null, jam_keluar: '17:00:00', durasi_lembur: '' });
         setEditingEntry(null); // Reset entry ketika membuka dialog
         setDialogVisible(true);
     };
 
+    const calculateOvertimeDuration = (startTime: string, endTime: string) => {
+        const start = new Date(`1970-01-01T${startTime}Z`);
+        const end = new Date(`1970-01-01T${endTime}Z`);
+        const diffInMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
+        const hours = Math.floor(diffInMinutes / 60);
+        const minutes = diffInMinutes % 60;
+        return `${hours} jam ${minutes} menit`;
+    };
+
     const handleSubmit = async () => {
         // Validasi
-        if (!newEntry.id_karyawan || !newEntry.tgl_lembur || newEntry.jam_lembur === '00:00:00') {
-            toast.current?.show({ severity: 'warn', summary: 'Peringatan', detail: 'Field id_karyawan, tgl_lembur, dan jam_lembur harus diisi dengan benar.', life: 3000 });
+        if (!newEntry.id_karyawan || !newEntry.tgl_lembur || newEntry.jam_keluar === '00:00:00') {
+            toast.current?.show({ severity: 'warn', summary: 'Peringatan', detail: 'Field id_karyawan, tgl_lembur, dan jam_keluar harus diisi dengan benar.', life: 3000 });
             return;
         }
 
@@ -86,7 +98,8 @@ const Lembur = () => {
             id_karyawan: newEntry.id_karyawan,
             nama: getEmployeeNameById(newEntry.id_karyawan),
             tgl_lembur: newEntry.tgl_lembur?.toISOString().split('T')[0] || '',
-            jam_lembur: newEntry.jam_lembur,
+            jam_keluar: newEntry.jam_keluar,
+            durasi_lembur: calculateOvertimeDuration('08:00:00', newEntry.jam_keluar), // Jam masuk default 08:00:00
             upah_lembur: null,
         };
 
@@ -135,7 +148,8 @@ const Lembur = () => {
             id_karyawan: entry.id_karyawan,
             nama: entry.nama,
             tgl_lembur: new Date(entry.tgl_lembur),
-            jam_lembur: entry.jam_lembur
+            jam_keluar: entry.jam_keluar,
+            durasi_lembur: entry.durasi_lembur
         });
         setDialogVisible(true);
     };
@@ -144,13 +158,11 @@ const Lembur = () => {
         try {
             const token = localStorage.getItem('authToken');
             await axios.delete(`http://localhost:8000/api/lembur/${entry.no}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: { Authorization: `Bearer ${token}` },
             });
             setOvertime((prevOvertime) => prevOvertime.filter((o) => o.no !== entry.no));
             toast.current?.show({ severity: 'success', summary: 'Berhasil', detail: 'Data lembur berhasil dihapus!', life: 3000 });
-        } catch (error: unknown) {
+        } catch (error) {
             if (axios.isAxiosError(error)) {
                 console.error('Error Response Data:', error.response?.data);
             } else {
@@ -158,7 +170,7 @@ const Lembur = () => {
             }
             toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Gagal menghapus data lembur.', life: 3000 });
         }
-    };
+    };    
 
     return (
         <div className="grid">
@@ -176,97 +188,99 @@ const Lembur = () => {
                     </div>
 
                     <DataTable value={overtime} responsiveLayout="scroll" className="p-datatable-striped" style={{ padding: '1rem' }}>
-    <Column 
-        field="no" 
-        header="No" 
-        className="text-center" 
-        style={{ width: '50px', textAlign: 'right', padding: '8px' }} 
-    />
-    <Column 
-        field="tgl_lembur" 
-        header="Tanggal Lembur" 
-        className="text-center" 
-        style={{ width: '150px', textAlign: 'right', padding: '8px' }} 
-    />
-    <Column 
-        field="jam_lembur" 
-        header="Jam Lembur" 
-        className="text-center" 
-        style={{ width: '100px', textAlign: 'right', padding: '8px' }} 
-    />
-    <Column
-        header="Aksi"
-        body={(rowData) => (
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <Button 
-                    icon="pi pi-pencil" 
-                    className="mr-2 p-button-success" 
-                    onClick={() => handleEdit(rowData)} 
-                />
-                <Button 
-                    icon="pi pi-trash" 
-                    className="p-button-danger" 
-                    onClick={() => handleDelete(rowData)} 
-                />
-            </div>
-        )}
-        style={{ width: '50px', textAlign: 'right', padding: '8px' }}
-    />
-</DataTable>
-
-                    <Dialog 
-                        visible={isDialogVisible} 
-                        onHide={() => setDialogVisible(false)} 
-                        header={editingEntry ? 'Edit Lembur' : 'Tambah Lembur'}
-                        footer={
-                            <div>
-                                <Button label="Batal" icon="pi pi-times" onClick={() => setDialogVisible(false)} className="p-button-text" />
-                                <Button label="Simpan" icon="pi pi-check" onClick={handleSubmit} className="p-button" style={{ backgroundColor: '#003366', color: 'white' }} />
-                            </div>
-                        }
-                    >
-                        <div className="p-field">
-                            <label htmlFor="idKaryawan">Karyawan</label>
-                            <Dropdown
-                                id="idKaryawan"
-                                value={newEntry.id_karyawan}
-                                options={employees}
-                                onChange={(e) => setNewEntry({ ...newEntry, id_karyawan: parseInt(e.value || '0') })}
-                                optionLabel="nama_karyawan"
-                                optionValue="id"
-                                placeholder="Pilih Karyawan"
-                            />
-                        </div>
-                        <div className="p-field">
-                            <label htmlFor="tgl_lembur">Tanggal Lembur</label>
-                            <Calendar
-                                id="tgl_lembur"
-                                value={newEntry.tgl_lembur ?? null}
-                                onChange={(e) => setNewEntry({ ...newEntry, tgl_lembur: e.value ?? null })}
-                                dateFormat="yy-mm-dd"
-                            />
-                        </div>
-                        <div className="p-field">
-                            <label htmlFor="jam_lembur">Jam Lembur</label>
-                            <InputNumber
-                                id="jam_lembur"
-                                value={parseInt(newEntry.jam_lembur.split(':')[0]) - 17}
-                                onValueChange={(e) => {
-                                    if (e.value != null) {
-                                        const updatedHour = 17 + e.value;
-                                        setNewEntry({ ...newEntry, jam_lembur: `${updatedHour.toString().padStart(2, '0')}:00:00` });
-                                    }
-                                }}
-                                mode="decimal"
-                                min={0}
-                                max={24 - 17}
-                                suffix=" jam"
-                                step={1}
-                            />
-                        </div>
-                    </Dialog>
+                        <Column 
+                            field="no" 
+                            header="No" 
+                            className="text-center" 
+                            style={{ width: '50px', textAlign: 'right', padding: '8px' }} 
+                        />
+                        <Column 
+                            field="nama" 
+                            header="Nama Karyawan" 
+                            className="text-center" 
+                            style={{ textAlign: 'center' }} 
+                        />
+                        <Column 
+                            field="tgl_lembur" 
+                            header="Tanggal" 
+                            className="text-center" 
+                            style={{ textAlign: 'center' }} 
+                        />
+                        <Column 
+                            field="jam_keluar" 
+                            header="Jam Keluar" 
+                            className="text-center" 
+                            style={{ textAlign: 'center' }} 
+                        />
+                        <Column 
+                            field="durasi_lembur" 
+                            header="Durasi Lembur" 
+                            className="text-center" 
+                            style={{ textAlign: 'center' }} 
+                        />
+                        <Column 
+                            header="Aksi" 
+                            body={(rowData) => (
+                                <div style={{ textAlign: 'center' }}>
+                                    <Button 
+                                        icon="pi pi-pencil" 
+                                        className="p-button-rounded p-button-success p-mr-2" // p-button-success untuk warna hijau
+                                        onClick={() => handleEdit(rowData)} 
+                                    />
+                                    <Button 
+                                        icon="pi pi-trash" 
+                                        className="p-button-rounded p-button-danger" 
+                                        onClick={() => handleDelete(rowData)} 
+                                    />
+                                </div>
+                            )} 
+                        />
+                    </DataTable>
                 </div>
             </div>
+
+            {/* Dialog untuk input data lembur */}
+            <Dialog header={editingEntry ? 'Edit Lembur' : 'Tambah Lembur'} visible={isDialogVisible} onHide={() => setDialogVisible(false)}>
+                <div className="field">
+                    <label htmlFor="id_karyawan">Karyawan</label>
+                    <Dropdown 
+                        id="id_karyawan" 
+                        value={newEntry.id_karyawan} 
+                        options={employees} 
+                        onChange={(e) => setNewEntry({ ...newEntry, id_karyawan: e.value })} 
+                        optionLabel="nama_karyawan" 
+                        optionValue="id" 
+                        placeholder="Pilih Karyawan"
+                    />
+                </div>
+
+                <div className="field">
+                    <label htmlFor="tgl_lembur">Tanggal Lembur</label>
+                    <Calendar 
+                        id="tgl_lembur" 
+                        value={newEntry.tgl_lembur} 
+                        onChange={(e) => setNewEntry({ ...newEntry, tgl_lembur: e.value })}
+                        showIcon 
+                    />
+                </div>
+
+                <div className="field">
+                    <label htmlFor="jam_keluar">Jam Keluar</label>
+                    <InputText 
+                        id="jam_keluar" 
+                        value={newEntry.jam_keluar} 
+                        onChange={(e) => setNewEntry({ ...newEntry, jam_keluar: e.target.value })} 
+                    />
+                </div>
+
+                <div className="field">
+                    <Button 
+                        label={editingEntry ? 'Update Lembur' : 'Simpan Lembur'} 
+                        icon="pi pi-save" 
+                        onClick={handleSubmit} 
+                    />
+                </div>
+            </Dialog>
         </div>
     );
 };

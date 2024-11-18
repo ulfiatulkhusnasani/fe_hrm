@@ -16,8 +16,9 @@ interface DinasLuarKotaEntry {
     id: string;
     id_karyawan: number;
     nama: string;
-    tanggalBerangkat: Date | null;
-    tanggalKembali: Date | null;
+    nama_karyawan?: string;
+    tanggalBerangkat: Date | null | undefined;  // Allow undefined
+    tanggalKembali: Date | null | undefined;    // Allow undefined
     kotaTujuan: string;
     keperluan: string;
     biayaTransport: number;
@@ -109,7 +110,7 @@ const DinasLuarKota = () => {
 
     const handleSave = async () => {
         const newEntryData = { 
-            id_karyawan: parseInt(newEntry.id),
+            nama_karyawan: newEntry.nama_karyawan,  // Gunakan nama_karyawan
             tgl_berangkat: newEntry.tanggalBerangkat ? newEntry.tanggalBerangkat.toISOString().split('T')[0] : '',
             tgl_kembali: newEntry.tanggalKembali ? newEntry.tanggalKembali.toISOString().split('T')[0] : '',
             kota_tujuan: newEntry.kotaTujuan,
@@ -118,7 +119,7 @@ const DinasLuarKota = () => {
             biaya_penginapan: newEntry.biayaPenginapan,
             uang_harian: newEntry.uangHarian,
         };
-
+    
         try {
             const token = localStorage.getItem('authToken');
             const response = await axios.post('http://localhost:8000/api/dinas_luarkota', newEntryData, {
@@ -129,7 +130,7 @@ const DinasLuarKota = () => {
             const savedEntry = {
                 ...response.data,
                 no: dinasLuarKota.length + 1,
-                nama: employees.find(emp => emp.id === response.data.id_karyawan.toString())?.nama_karyawan || 'Unknown'
+                nama_karyawan: response.data.nama_karyawan || 'Unknown'  // Update dengan nama_karyawan
             };
             setDinasLuarKota([...dinasLuarKota, savedEntry]);
             setShowDialog(false);
@@ -156,7 +157,7 @@ const DinasLuarKota = () => {
                 toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Gagal menyimpan data.', life: 3000 });
             }
         }
-    };
+    };    
 
     const handleChange = (e: any, field: string) => {
         const value = field === 'tanggalBerangkat' || field === 'tanggalKembali' ? e.value : e.target.value;
@@ -210,18 +211,18 @@ const DinasLuarKota = () => {
             <Button label="Tambah Dinas" icon="pi pi-plus" onClick={handleTambahClick} className="p-mb-3" />
             <Toast ref={toast} />
             <DataTable value={dinasLuarKota} paginator rows={10} rowsPerPageOptions={[5, 10, 20]}>
-                <Column field="no" header="No" />
-                <Column field="id_karyawan" header="ID Karyawan" />
-                <Column field="tgl_berangkat" header="Tanggal Berangkat" body={(rowData) => rowData.tgl_berangkat ? new Date(rowData.tgl_berangkat).toLocaleDateString() : ''} />
-                <Column field="tgl_kembali" header="Tanggal Kembali" body={(rowData) => rowData.tgl_kembali ? new Date(rowData.tgl_kembali).toLocaleDateString() : ''} />
-                <Column field="kota_tujuan" header="Kota Tujuan" />
-                <Column field="keperluan" header="Keperluan" />
-                <Column field="biaya_transport" header="Biaya Transport" />
-                <Column field="biaya_penginapan" header="Biaya Penginapan" />
-                <Column field="uang_harian" header="Uang Harian" />
-                <Column field="total_biaya" header="Total Biaya" />
-                <Column body={actionBodyTemplate} header="Aksi" />
-            </DataTable>
+    <Column field="no" header="No" />
+    <Column field="nama_karyawan" header="Nama Karyawan" />  {/* Ganti id_karyawan menjadi nama_karyawan */}
+    <Column field="tgl_berangkat" header="Tanggal Berangkat" body={(rowData) => rowData.tgl_berangkat ? new Date(rowData.tgl_berangkat).toLocaleDateString() : ''} />
+    <Column field="tgl_kembali" header="Tanggal Kembali" body={(rowData) => rowData.tgl_kembali ? new Date(rowData.tgl_kembali).toLocaleDateString() : ''} />
+    <Column field="kota_tujuan" header="Kota Tujuan" />
+    <Column field="keperluan" header="Keperluan" />
+    <Column field="biaya_transport" header="Biaya Transport" />
+    <Column field="biaya_penginapan" header="Biaya Penginapan" />
+    <Column field="uang_harian" header="Uang Harian" />
+    <Column field="total_biaya" header="Total Biaya" />
+    <Column body={actionBodyTemplate} header="Aksi" />
+</DataTable>
 
             <Dialog header="Tambah Dinas Luar Kota" visible={showDialog} style={{ width: '50vw' }} footer={dialogFooter} onHide={() => setShowDialog(false)}>
                 <div className="p-fluid">
